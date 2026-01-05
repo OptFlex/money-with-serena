@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>お金の貸し借り管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 0;
+            margin: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0;
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .login-container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: #ffffff;
+        }
+
+        .login-box {
+            background: white;
+            padding: 50px 30px;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+            border: 1px solid #f3f4f6;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 32px;
+        }
+
+        .login-box h1 {
+            font-size: 28px;
+            color: #111827;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .login-box p {
+            color: #6b7280;
+            margin-bottom: 40px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .google-login-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 18px 24px;
+            background: #111827;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .google-login-btn:hover {
+            background: #1f2937;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .google-login-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .google-icon {
+            width: 20px;
+            height: 20px;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: env(safe-area-inset-top, 0) 20px 25px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            margin-bottom: 15px;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        .user-info {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .balance {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .balance-amount {
+            font-size: 36px;
+            font-weight: 700;
+            margin-top: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .balance-label {
+            font-size: 13px;
+            opacity: 0.95;
+        }
+
+        .form-section {
+            padding: 20px;
+            border-bottom: 8px solid #f5f5f5;
+            flex-shrink: 0;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.2s;
+            background: #f9fafb;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: none;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 16px 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        button:active {
+            transform: scale(0.96);
+        }
+
+        .btn-lend {
+            background: #10b981;
+            color: white;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+        }
+
+        .btn-lend:active {
+            box-shadow: 0 1px 4px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-borrow {
+            background: #ef4444;
+            color: white;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-borrow:active {
+            box-shadow: 0 1px 4px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn-repay {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-repay:active {
+            box-shadow: 0 1px 4px rgba(102, 126, 234, 0.3);
+        }
+
+        .history-section {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .history-section h2 {
+            margin-bottom: 16px;
+            color: #111827;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .history-list {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+
+        .history-item {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid #f3f4f6;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .history-item.lend {
+            border-left: 5px solid #10b981;
+        }
+
+        .history-item.borrow {
+            border-left: 5px solid #ef4444;
+        }
+
+        .history-item.repay {
+            border-left: 5px solid #3b82f6;
+        }
+
+        .history-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-type {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .history-type.lend {
+            color: #10b981;
+        }
+
+        .history-type.borrow {
+            color: #ef4444;
+        }
+
+        .history-type.repay {
+            color: #3b82f6;
+        }
+
+        .history-description {
+            color: #374151;
+            font-size: 15px;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .history-date {
+            color: #9ca3af;
+            font-size: 13px;
+        }
+
+        .history-by {
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .history-amount {
+            font-size: 22px;
+            font-weight: 700;
+            margin-left: 12px;
+            flex-shrink: 0;
+            letter-spacing: -0.5px;
+        }
+
+        .history-amount.lend {
+            color: #10b981;
+        }
+
+        .history-amount.borrow {
+            color: #ef4444;
+        }
+
+        .history-amount.repay {
+            color: #3b82f6;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+            font-size: 15px;
+        }
+
+        .delete-btn {
+            background: #ef4444;
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-left: 12px;
+            flex-shrink: 0;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+        }
+
+        .delete-btn:active {
+            transform: scale(0.95);
+            background: #dc2626;
+        }
+
+        .dashboard-section {
+            padding: 20px;
+            background: #f9fafb;
+            border-bottom: 8px solid #e5e7eb;
+        }
+
+        .dashboard-section h2 {
+            margin-bottom: 16px;
+            color: #111827;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 2px solid #f3f4f6;
+        }
+
+        .stat-card.highlight {
+            border: 2px solid #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            letter-spacing: -0.5px;
+        }
+
+        .stat-value.positive {
+            color: #10b981;
+        }
+
+        .stat-value.negative {
+            color: #ef4444;
+        }
+
+        .user-stats {
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 2px solid #f3f4f6;
+        }
+
+        .user-stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .user-stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .user-stat-info {
+            flex: 1;
+        }
+
+        .user-stat-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+
+        .user-stat-detail {
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .user-stat-amount {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .footer {
+            padding: 30px 20px;
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 20px);
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+            background: #fafafa;
+        }
+
+        .logout-link {
+            color: #6b7280;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .logout-link:active {
+            color: #374151;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-content {
+            background: white;
+            width: 100%;
+            max-height: 85vh;
+            border-radius: 24px 24px 0 0;
+            padding: 24px 20px;
+            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 20px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+            }
+            to {
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .modal-close {
+            background: #f3f4f6;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 20px;
+            color: #6b7280;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:active {
+            background: #e5e7eb;
+        }
+
+        .repay-item {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.2s;
+        }
+
+        .repay-item.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .repay-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            flex-shrink: 0;
+            accent-color: #667eea;
+        }
+
+        .repay-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .repay-description {
+            font-size: 15px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .repay-date {
+            font-size: 13px;
+            color: #9ca3af;
+        }
+
+        .repay-amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ef4444;
+            flex-shrink: 0;
+        }
+
+        .repay-summary {
+            position: sticky;
+            bottom: 0;
+            background: white;
+            padding: 20px 0;
+            border-top: 2px solid #e5e7eb;
+            margin-top: 20px;
+        }
+
+        .repay-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .repay-total-label {
+            font-size: 16px;
+            color: #6b7280;
+        }
+
+        .repay-total-amount {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .btn-repay-confirm {
+            width: 100%;
+            padding: 18px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-repay-confirm:disabled {
+            background: #d1d5db;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .btn-repay-confirm:not(:disabled):active {
+            transform: scale(0.98);
+        }
+
+        .empty-repay {
+            text-align: center;
+            padding: 40px 20px;
+            color: #9ca3af;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- ログイン画面 -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-box">
+            <div class="login-icon">💰</div>
+            <h1>お金の貸し借り管理</h1>
+            <p>Googleアカウントでログインしてください</p>
+            <button class="google-login-btn" onclick="signInWithGoogle()">
+                <svg class="google-icon" viewBox="0 0 20 20">
+                    <path fill="#4285F4" d="M19.6 10.23c0-.82-.1-1.42-.25-2.05H10v3.72h5.5c-.15.96-.74 2.31-2.04 3.22v2.45h3.16c1.89-1.73 2.98-4.3 2.98-7.34z"/>
+                    <path fill="#34A853" d="M13.46 15.13c-.83.59-1.96 1-3.46 1-2.64 0-4.88-1.74-5.68-4.15H1.07v2.52C2.72 17.75 6.09 20 10 20c2.7 0 4.96-.89 6.62-2.42l-3.16-2.45z"/>
+                    <path fill="#FBBC05" d="M3.99 10c0-.69.12-1.35.32-1.97V5.51H1.07A9.973 9.973 0 000 10c0 1.61.39 3.14 1.07 4.49l3.24-2.52c-.2-.62-.32-1.28-.32-1.97z"/>
+                    <path fill="#EA4335" d="M10 3.88c1.88 0 3.13.81 3.85 1.48l2.84-2.76C14.96.99 12.7 0 10 0 6.09 0 2.72 2.25 1.07 5.51l3.24 2.52C5.12 5.62 7.36 3.88 10 3.88z"/>
+                </svg>
+                Googleでログイン
+            </button>
+        </div>
+    </div>
+
+    <!-- メインアプリ画面 -->
+    <div id="appScreen" class="container hidden">
+        <div class="header">
+            <h1>お金の貸し借り管理</h1>
+            <div class="user-info" id="userInfo"></div>
+            <div class="balance">
+                <div class="balance-label">現在の収支</div>
+                <div class="balance-amount" id="balanceAmount">¥0</div>
+                <div class="balance-label" id="balanceStatus"></div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <div class="form-group">
+                <label for="amount">金額</label>
+                <input type="number" id="amount" placeholder="例: 5000" min="0">
+            </div>
+
+            <div class="form-group">
+                <label for="description">説明</label>
+                <textarea id="description" placeholder="例: ランチ代"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="date">日付</label>
+                <input type="date" id="date">
+            </div>
+
+            <div class="button-group">
+                <button class="btn-lend" onclick="addTransaction('lend')">貸した</button>
+                <button class="btn-borrow" onclick="addTransaction('borrow')">借りた</button>
+                <button class="btn-repay" onclick="openRepayModal()">返す</button>
+            </div>
+        </div>
+
+        <!-- ダッシュボード -->
+        <div class="dashboard-section">
+            <h2>詳細</h2>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">貸した合計</div>
+                    <div class="stat-value positive" id="totalLent">¥0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">借りた合計</div>
+                    <div class="stat-value negative" id="totalBorrowed">¥0</div>
+                </div>
+            </div>
+
+            <div class="user-stats" id="userStats">
+                <div class="user-stat-row">
+                    <div class="user-stat-info">
+                        <div class="user-stat-name">ユーザー1</div>
+                        <div class="user-stat-detail">貸: ¥0 / 借: ¥0</div>
+                    </div>
+                    <div class="user-stat-amount">¥0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="history-section">
+            <h2>履歴</h2>
+            <div class="history-list" id="historyList">
+                <div class="empty-state">読み込み中...</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <a class="logout-link" onclick="signOut()">ログアウト</a>
+        </div>
+    </div>
+
+    <!-- 返済モーダル -->
+    <div id="repayModal" class="modal hidden" onclick="closeRepayModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title">返済する</div>
+                <button class="modal-close" onclick="closeRepayModal()">×</button>
+            </div>
+
+            <div id="repayList"></div>
+
+            <div class="repay-summary">
+                <div class="repay-total">
+                    <div class="repay-total-label">返済額</div>
+                    <div class="repay-total-amount" id="repayTotalAmount">¥0</div>
+                </div>
+                <button class="btn-repay-confirm" id="repayConfirmBtn" disabled onclick="confirmRepay()">
+                    返済を確定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== モックアップ設定 =====
+        const USERS = {
+            user1: { email: 'user1@example.com', name: 'あなた' },
+            user2: { email: 'user2@example.com', name: '彼女' }
+        };
+
+        let currentUser = null;
+        let transactions = [];
+
+        // ===== 認証関連 =====
+        function signInWithGoogle() {
+            // モックアップ: Googleログインをシミュレート（メールアドレスを入力）
+            const email = prompt('Googleログインをシミュレートします。メールアドレスを入力してください:\n\n許可されているアドレス:\n- user1@example.com\n- user2@example.com');
+
+            if (!email) return; // キャンセルされた場合
+
+            // メールアドレスからユーザーを特定
+            const userEntry = Object.entries(USERS).find(([_, user]) => user.email === email);
+
+            if (!userEntry) {
+                alert('このメールアドレスは許可されていません。');
+                return;
+            }
+
+            const [userId, userInfo] = userEntry;
+            currentUser = userInfo;
+
+            // ローカルストレージに保存
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('currentUserId', userId);
+
+            showApp();
+        }
+
+        function signOut() {
+            if (confirm('ログアウトしますか?')) {
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('currentUserId');
+                location.reload();
+            }
+        }
+
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appScreen').classList.remove('hidden');
+            document.getElementById('userInfo').textContent = `${currentUser.name} (${currentUser.email})`;
+            loadTransactions();
+        }
+
+        // ===== データ関連 =====
+        function loadTransactions() {
+            const stored = localStorage.getItem('transactions');
+            transactions = stored ? JSON.parse(stored) : [];
+
+            updateBalance();
+            updateDashboard();
+            renderHistory();
+        }
+
+        function saveTransactions() {
+            localStorage.setItem('transactions', JSON.stringify(transactions));
+        }
+
+        function setDefaultDate() {
+            const dateInput = document.getElementById('date');
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
+        }
+
+        function updateBalance() {
+            const balance = transactions.reduce((sum, t) => {
+                if (t.type === 'lend') return sum + t.amount;
+                if (t.type === 'borrow') return sum - t.amount;
+                if (t.type === 'repay') return sum + t.amount; // 返済も収支をプラスに
+                return sum;
+            }, 0);
+
+            const balanceElement = document.getElementById('balanceAmount');
+            const statusElement = document.getElementById('balanceStatus');
+
+            balanceElement.textContent = `¥${balance.toLocaleString()}`;
+
+            if (balance > 0) {
+                statusElement.textContent = '彼女が借りている';
+            } else if (balance < 0) {
+                statusElement.textContent = 'あなたが借りている';
+            } else {
+                statusElement.textContent = '貸し借りなし';
+            }
+        }
+
+        function updateDashboard() {
+            // ログインユーザーの視点で計算
+            const myEmail = currentUser.email;
+
+            // 自分が貸した = 自分が登録したlend + 相手が登録したborrow
+            const myLent = transactions
+                .filter(t =>
+                    (t.user_email === myEmail && t.type === 'lend') ||
+                    (t.user_email !== myEmail && t.type === 'borrow')
+                )
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            // 自分が借りた = 自分が登録したborrow + 相手が登録したlend
+            const myBorrowed = transactions
+                .filter(t =>
+                    (t.user_email === myEmail && t.type === 'borrow') ||
+                    (t.user_email !== myEmail && t.type === 'lend')
+                )
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            document.getElementById('totalLent').textContent = `¥${myLent.toLocaleString()}`;
+            document.getElementById('totalBorrowed').textContent = `¥${myBorrowed.toLocaleString()}`;
+
+            // ユーザーごとの統計
+            const userStatsMap = {};
+
+            transactions.forEach(t => {
+                if (!userStatsMap[t.user_email]) {
+                    userStatsMap[t.user_email] = {
+                        email: t.user_email,
+                        lent: 0,
+                        borrowed: 0,
+                        repaid: 0
+                    };
+                }
+
+                if (t.type === 'lend') {
+                    userStatsMap[t.user_email].lent += t.amount;
+                } else if (t.type === 'borrow') {
+                    userStatsMap[t.user_email].borrowed += t.amount;
+                } else if (t.type === 'repay') {
+                    userStatsMap[t.user_email].repaid += t.amount;
+                }
+            });
+
+            const userStatsArray = Object.values(userStatsMap);
+            const userStatsContainer = document.getElementById('userStats');
+
+            if (userStatsArray.length === 0) {
+                userStatsContainer.innerHTML = '<div style="text-align: center; color: #9ca3af; padding: 20px;">データがありません</div>';
+                return;
+            }
+
+            userStatsContainer.innerHTML = userStatsArray.map(user => {
+                // ログインユーザーの視点で計算
+                let displayLent, displayBorrowed, displayRepaid, netBalance;
+
+                if (user.email === myEmail) {
+                    // 自分の統計はそのまま
+                    displayLent = user.lent;
+                    displayBorrowed = user.borrowed;
+                    displayRepaid = user.repaid;
+                    netBalance = user.lent + user.repaid - user.borrowed;
+                } else {
+                    // 相手の統計は逆転
+                    displayLent = user.borrowed;  // 相手が借りた = 自分が貸した
+                    displayBorrowed = user.lent;  // 相手が貸した = 自分が借りた
+                    displayRepaid = 0;  // 相手の返済は自分からは見えない（複雑になるので）
+                    netBalance = user.borrowed + user.repaid - user.lent;  // 逆計算
+                }
+
+                const userName = user.email.split('@')[0];
+
+                let statusText = '';
+                let amountClass = '';
+                let amountText = '';
+
+                if (netBalance > 0) {
+                    statusText = '相手が借りている';
+                    amountClass = 'positive';
+                    amountText = `+¥${netBalance.toLocaleString()}`;
+                } else if (netBalance < 0) {
+                    statusText = '自分が借りている';
+                    amountClass = 'negative';
+                    amountText = `-¥${Math.abs(netBalance).toLocaleString()}`;
+                } else {
+                    statusText = '貸し借りなし';
+                    amountText = '¥0';
+                }
+
+                return `
+                    <div class="user-stat-row">
+                        <div class="user-stat-info">
+                            <div class="user-stat-name">${escapeHtml(userName)}</div>
+                            <div class="user-stat-detail">貸: ¥${displayLent.toLocaleString()} / 借: ¥${displayBorrowed.toLocaleString()}${displayRepaid > 0 ? ` / 返済: ¥${displayRepaid.toLocaleString()}` : ''}</div>
+                            <div class="user-stat-detail" style="margin-top: 2px; color: #6b7280;">${statusText}</div>
+                        </div>
+                        <div class="user-stat-amount ${amountClass}">${amountText}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderHistory() {
+            const historyList = document.getElementById('historyList');
+
+            if (transactions.length === 0) {
+                historyList.innerHTML = '<div class="empty-state">まだ記録がありません</div>';
+                return;
+            }
+
+            const sortedTransactions = [...transactions].sort((a, b) =>
+                new Date(b.date) - new Date(a.date)
+            );
+
+            historyList.innerHTML = sortedTransactions.map((t) => {
+                let typeLabel = '';
+                let amountSign = '';
+
+                if (t.type === 'lend') {
+                    typeLabel = '貸した';
+                    amountSign = '+';
+                } else if (t.type === 'borrow') {
+                    typeLabel = '借りた';
+                    amountSign = '-';
+                } else if (t.type === 'repay') {
+                    typeLabel = '返済';
+                    amountSign = '+';
+                }
+
+                return `
+                    <div class="history-item ${t.type}">
+                        <div class="history-info">
+                            <div class="history-type ${t.type}">
+                                ${typeLabel}
+                            </div>
+                            <div class="history-description">${escapeHtml(t.description)}</div>
+                            <div class="history-date">${formatDate(t.date)}</div>
+                            <div class="history-by">登録者: ${t.user_email.split('@')[0]}</div>
+                        </div>
+                        <div class="history-amount ${t.type}">
+                            ${amountSign}¥${t.amount.toLocaleString()}
+                        </div>
+                        <button class="delete-btn" onclick="deleteTransaction('${t.id}')">削除</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return `${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function addTransaction(type) {
+            const amount = parseInt(document.getElementById('amount').value);
+            const description = document.getElementById('description').value.trim();
+            const date = document.getElementById('date').value;
+
+            if (!amount || amount <= 0) {
+                alert('金額を入力してください');
+                return;
+            }
+
+            if (!description) {
+                alert('説明を入力してください');
+                return;
+            }
+
+            if (!date) {
+                alert('日付を選択してください');
+                return;
+            }
+
+            const transaction = {
+                id: Date.now().toString(),
+                user_email: currentUser.email,
+                type,
+                amount,
+                description,
+                date,
+                repaid: type === 'borrow' ? false : undefined // 借りた場合のみrepaidフラグを追加
+            };
+
+            transactions.push(transaction);
+            saveTransactions();
+
+            document.getElementById('amount').value = '';
+            document.getElementById('description').value = '';
+            setDefaultDate();
+
+            loadTransactions();
+        }
+
+        function deleteTransaction(id) {
+            if (confirm('この記録を削除しますか?')) {
+                const transaction = transactions.find(t => t.id === id);
+
+                // 返済を削除する場合、紐付けられた借りを未返済に戻す
+                if (transaction && transaction.type === 'repay' && transaction.repaidTransactions) {
+                    transaction.repaidTransactions.forEach(repaidId => {
+                        const borrowTransaction = transactions.find(t => t.id === repaidId);
+                        if (borrowTransaction) {
+                            borrowTransaction.repaid = false;
+                        }
+                    });
+                }
+
+                transactions = transactions.filter(t => t.id !== id);
+                saveTransactions();
+                loadTransactions();
+            }
+        }
+
+        // ===== 返済関連 =====
+        let selectedRepayItems = new Set();
+
+        function openRepayModal() {
+            // 借りているトランザクションのみを取得（返済済みを除外）
+            const borrowedTransactions = transactions.filter(t => t.type === 'borrow' && !t.repaid);
+
+            const repayList = document.getElementById('repayList');
+
+            if (borrowedTransactions.length === 0) {
+                repayList.innerHTML = '<div class="empty-repay">返済する借りがありません</div>';
+            } else {
+                repayList.innerHTML = borrowedTransactions.map(t => `
+                    <div class="repay-item" id="repay-item-${t.id}">
+                        <input
+                            type="checkbox"
+                            class="repay-checkbox"
+                            id="checkbox-${t.id}"
+                            onchange="toggleRepayItem('${t.id}')"
+                        >
+                        <div class="repay-info">
+                            <div class="repay-description">${escapeHtml(t.description)}</div>
+                            <div class="repay-date">${formatDate(t.date)}</div>
+                        </div>
+                        <div class="repay-amount">¥${t.amount.toLocaleString()}</div>
+                    </div>
+                `).join('');
+            }
+
+            selectedRepayItems.clear();
+            updateRepayTotal();
+            document.getElementById('repayModal').classList.remove('hidden');
+        }
+
+        function closeRepayModal() {
+            document.getElementById('repayModal').classList.add('hidden');
+            selectedRepayItems.clear();
+        }
+
+        function toggleRepayItem(id) {
+            const checkbox = document.getElementById(`checkbox-${id}`);
+            const item = document.getElementById(`repay-item-${id}`);
+
+            if (checkbox.checked) {
+                selectedRepayItems.add(id);
+                item.classList.add('selected');
+            } else {
+                selectedRepayItems.delete(id);
+                item.classList.remove('selected');
+            }
+
+            updateRepayTotal();
+        }
+
+        function updateRepayTotal() {
+            const total = Array.from(selectedRepayItems).reduce((sum, id) => {
+                const transaction = transactions.find(t => t.id === id);
+                return sum + (transaction ? transaction.amount : 0);
+            }, 0);
+
+            document.getElementById('repayTotalAmount').textContent = `¥${total.toLocaleString()}`;
+            document.getElementById('repayConfirmBtn').disabled = total === 0;
+        }
+
+        function confirmRepay() {
+            if (selectedRepayItems.size === 0) return;
+
+            const repayedIds = Array.from(selectedRepayItems);
+            const total = repayedIds.reduce((sum, id) => {
+                const transaction = transactions.find(t => t.id === id);
+                return sum + (transaction ? transaction.amount : 0);
+            }, 0);
+
+            // 選択された借りを「返済済み」にマーク
+            transactions.forEach(t => {
+                if (selectedRepayItems.has(t.id)) {
+                    t.repaid = true;
+                }
+            });
+
+            // 返済記録を追加（type: 'repay'）
+            const repayTransaction = {
+                id: Date.now().toString(),
+                user_email: currentUser.email,
+                type: 'repay',
+                amount: total,
+                description: '返済',
+                date: new Date().toISOString().split('T')[0],
+                repaidTransactions: repayedIds // どの借りを返したか記録
+            };
+
+            transactions.push(repayTransaction);
+            saveTransactions();
+            loadTransactions();
+
+            closeRepayModal();
+        }
+
+        // ===== 初期化 =====
+        function initialize() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            const userId = localStorage.getItem('currentUserId');
+
+            if (isLoggedIn && userId && USERS[userId]) {
+                // ログイン済みの場合はユーザー情報を復元
+                currentUser = USERS[userId];
+                setDefaultDate();
+                showApp();
+            } else {
+                // 未ログインの場合はログイン画面を表示
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('appScreen').classList.add('hidden');
+            }
+        }
+
+        // アプリ起動
+        initialize();
+    </script>
+</body>
+</html>
