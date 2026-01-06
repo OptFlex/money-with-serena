@@ -819,6 +819,9 @@
         async function signInWithGoogle() {
             const { error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
+                options: {
+                    redirectTo: 'https://optflex.github.io/money-with-serena/'
+                }
             });
 
             if (error) {
