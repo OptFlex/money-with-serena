@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データベース設計 - お金の貸し借り管理アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 36px;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h2 {
+            font-size: 28px;
+            color: #111827;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 3px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h3 {
+            font-size: 20px;
+            color: #374151;
+            margin: 24px 0 16px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        th, td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            color: #374151;
+            font-size: 15px;
+        }
+
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .type-lend {
+            background: #10b981;
+        }
+
+        .type-borrow {
+            background: #ef4444;
+        }
+
+        .type-repay {
+            background: #3b82f6;
+        }
+
+        .code-block {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 16px 0;
+        }
+
+        .json-key {
+            color: #93c5fd;
+        }
+
+        .json-string {
+            color: #86efac;
+        }
+
+        .json-number {
+            color: #fbbf24;
+        }
+
+        .json-boolean {
+            color: #fb923c;
+        }
+
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 24px 0;
+            padding: 24px;
+            background: #f9fafb;
+            border-radius: 12px;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .flow-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .flow-content {
+            flex: 1;
+            background: white;
+            padding: 16px 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .flow-title {
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .flow-description {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .formula {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 16px 0;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 15px;
+            color: #78350f;
+        }
+
+        .formula strong {
+            color: #92400e;
+        }
+
+        .example-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .example-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .example-card {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .example-card h4 {
+            font-size: 16px;
+            color: #111827;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .example-item {
+            padding: 8px 0;
+            color: #374151;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .example-label {
+            color: #6b7280;
+        }
+
+        .example-value {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .example-value.positive {
+            color: #10b981;
+        }
+
+        .example-value.negative {
+            color: #ef4444;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border: 2px solid #667eea;
+            padding: 24px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+
+        .highlight-box h4 {
+            color: #667eea;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .highlight-box p {
+            color: #374151;
+            line-height: 1.6;
+        }
+
+        .icon {
+            font-size: 24px;
+        }
+
+        .note {
+            background: #e0e7ff;
+            border-left: 4px solid #667eea;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            font-size: 14px;
+            color: #3730a3;
+            line-height: 1.6;
+        }
+
+        .data-example {
+            background: #f9fafb;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .data-row:last-child {
+            border-bottom: none;
+        }
+
+        .data-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .data-value {
+            color: #111827;
+            font-weight: 600;
+        }
+
+        ul {
+            margin: 16px 0;
+            padding-left: 24px;
+        }
+
+        li {
+            color: #374151;
+            line-height: 1.8;
+            margin: 8px 0;
+        }
+
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .security-item {
+            background: #ecfdf5;
+            border: 2px solid #10b981;
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .security-item h4 {
+            color: #059669;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .security-item p {
+            color: #065f46;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗄️ データベース設計書</h1>
+        <p class="subtitle">お金の貸し借り管理アプリ</p>
+
+        <!-- 概要 -->
+        <div class="section">
+            <h2><span class="icon">📋</span> 概要</h2>
+            <p style="color: #374151; line-height: 1.8; font-size: 16px;">
+                このアプリは、二人（あなたと彼女）の間のお金の貸し借りを管理するシステムです。<br>
+                各ユーザーが<strong>自分の視点でデータを見られる</strong>ように設計されています。
+            </p>
+            <div class="highlight-box">
+                <h4>💡 設計の特徴</h4>
+                <p>
+                    同じトランザクションでも、ログインしているユーザーによって「貸した」「借りた」が逆転して表示されます。<br>
+                    例：User1が「貸した ¥5,000」→ User2から見ると「借りた ¥5,000」
+                </p>
+            </div>
+        </div>
+
+        <!-- テーブル構造 -->
+        <div class="section">
+            <h2><span class="icon">📊</span> テーブル構造</h2>
+
+            <h3>1️⃣ allowed_emails テーブル</h3>
+            <p style="color: #6b7280; margin-bottom: 16px;">ログインを許可されたユーザーのメールアドレスを管理します。</p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>カラム名</th>
+                            <th>型</th>
+                            <th>制約</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id</code></td>
+                            <td>uuid</td>
+                            <td>PRIMARY KEY</td>
+                            <td>自動生成されるID</td>
+                        </tr>
+                        <tr>
+                            <td><code>email</code></td>
+                            <td>text</td>
+                            <td>UNIQUE, NOT NULL</td>
+                            <td>許可されたメールアドレス</td>
+                        </tr>
+                        <tr>
+                            <td><code>created_at</code></td>
+                            <td>timestamptz</td>
+                            <td>NOT NULL</td>
+                            <td>作成日時</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="data-example">
+                <strong>データ例：</strong>
+                <div class="data-row">
+                    <span class="data-label">id:</span>
+                    <span class="data-value">123e4567-e89b-12d3-a456-426614174000</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">email:</span>
+                    <span class="data-value">user1@gmail.com</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">created_at:</span>
+                    <span class="data-value">2025-01-05T10:00:00Z</span>
+                </div>
+            </div>
+
+            <h3>2️⃣ transactions テーブル</h3>
+            <p style="color: #6b7280; margin-bottom: 16px;">すべての貸し借り・返済の記録を保存します。</p>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>カラム名</th>
+                            <th>型</th>
+                            <th>制約</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id</code></td>
+                            <td>uuid</td>
+                            <td>PRIMARY KEY</td>
+                            <td>自動生成されるID</td>
+                        </tr>
+                        <tr>
+                            <td><code>user_email</code></td>
+                            <td>text</td>
+                            <td>NOT NULL</td>
+                            <td>記録を登録したユーザーのメールアドレス</td>
+                        </tr>
+                        <tr>
+                            <td><code>type</code></td>
+                            <td>text</td>
+                            <td>NOT NULL, CHECK</td>
+                            <td>トランザクションの種類: 'lend', 'borrow', 'repay'</td>
+                        </tr>
+                        <tr>
+                            <td><code>amount</code></td>
+                            <td>integer</td>
+                            <td>NOT NULL</td>
+                            <td>金額（円）</td>
+                        </tr>
+                        <tr>
+                            <td><code>description</code></td>
+                            <td>text</td>
+                            <td>NOT NULL</td>
+                            <td>説明（例: "ランチ代"）</td>
+                        </tr>
+                        <tr>
+                            <td><code>date</code></td>
+                            <td>date</td>
+                            <td>NOT NULL</td>
+                            <td>取引日</td>
+                        </tr>
+                        <tr>
+                            <td><code>repaid</code></td>
+                            <td>boolean</td>
+                            <td>NULLABLE</td>
+                            <td>返済済みフラグ（borrowの場合のみ使用）</td>
+                        </tr>
+                        <tr>
+                            <td><code>repaid_transactions</code></td>
+                            <td>text[]</td>
+                            <td>NULLABLE</td>
+                            <td>返済した借りのIDリスト（repayの場合のみ使用）</td>
+                        </tr>
+                        <tr>
+                            <td><code>created_at</code></td>
+                            <td>timestamptz</td>
+                            <td>NOT NULL</td>
+                            <td>レコード作成日時</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- トランザクションタイプ -->
+        <div class="section">
+            <h2><span class="icon">💳</span> トランザクションタイプ</h2>
+
+            <h3><span class="type-badge type-lend">LEND</span> 貸した</h3>
+            <p style="color: #6b7280; margin: 12px 0;">ユーザーが相手にお金を貸したことを記録</p>
+            <div class="code-block">
+{
+  <span class="json-key">"id"</span>: <span class="json-string">"abc123"</span>,
+  <span class="json-key">"user_email"</span>: <span class="json-string">"user1@gmail.com"</span>,
+  <span class="json-key">"type"</span>: <span class="json-string">"lend"</span>,
+  <span class="json-key">"amount"</span>: <span class="json-number">5000</span>,
+  <span class="json-key">"description"</span>: <span class="json-string">"ランチ代"</span>,
+  <span class="json-key">"date"</span>: <span class="json-string">"2025-01-05"</span>,
+  <span class="json-key">"repaid"</span>: <span class="json-boolean">null</span>,
+  <span class="json-key">"repaid_transactions"</span>: <span class="json-boolean">null</span>
+}
+            </div>
+            <div class="note">
+                <strong>📝 注意：</strong> lendタイプでは<code>repaid</code>フィールドは使用しません。
+            </div>
+
+            <h3><span class="type-badge type-borrow">BORROW</span> 借りた</h3>
+            <p style="color: #6b7280; margin: 12px 0;">ユーザーが相手からお金を借りたことを記録</p>
+            <div class="code-block">
+{
+  <span class="json-key">"id"</span>: <span class="json-string">"def456"</span>,
+  <span class="json-key">"user_email"</span>: <span class="json-string">"user2@gmail.com"</span>,
+  <span class="json-key">"type"</span>: <span class="json-string">"borrow"</span>,
+  <span class="json-key">"amount"</span>: <span class="json-number">3000</span>,
+  <span class="json-key">"description"</span>: <span class="json-string">"映画代"</span>,
+  <span class="json-key">"date"</span>: <span class="json-string">"2025-01-04"</span>,
+  <span class="json-key">"repaid"</span>: <span class="json-boolean">false</span>,  <span style="color: #fbbf24;">← 未返済</span>
+  <span class="json-key">"repaid_transactions"</span>: <span class="json-boolean">null</span>
+}
+            </div>
+            <div class="note">
+                <strong>📝 注意：</strong> borrowタイプでは<code>repaid</code>フィールドで返済状態を管理します（初期値: false）。
+            </div>
+
+            <h3><span class="type-badge type-repay">REPAY</span> 返済</h3>
+            <p style="color: #6b7280; margin: 12px 0;">ユーザーが借りていたお金を返済したことを記録</p>
+            <div class="code-block">
+{
+  <span class="json-key">"id"</span>: <span class="json-string">"ghi789"</span>,
+  <span class="json-key">"user_email"</span>: <span class="json-string">"user2@gmail.com"</span>,
+  <span class="json-key">"type"</span>: <span class="json-string">"repay"</span>,
+  <span class="json-key">"amount"</span>: <span class="json-number">3000</span>,
+  <span class="json-key">"description"</span>: <span class="json-string">"返済"</span>,
+  <span class="json-key">"date"</span>: <span class="json-string">"2025-01-05"</span>,
+  <span class="json-key">"repaid"</span>: <span class="json-boolean">null</span>,
+  <span class="json-key">"repaid_transactions"</span>: [<span class="json-string">"def456"</span>]  <span style="color: #fbbf24;">← どの借りを返したか</span>
+}
+            </div>
+            <div class="note">
+                <strong>📝 注意：</strong> repayタイプでは<code>repaid_transactions</code>配列にどの借り（borrowのID）を返済したかを記録します。
+            </div>
+        </div>
+
+        <!-- 視点変換 -->
+        <div class="section">
+            <h2><span class="icon">🔄</span> データの視点変換</h2>
+            <p style="color: #374151; line-height: 1.8; margin-bottom: 24px;">
+                このアプリの最大の特徴は、<strong>ログインしているユーザーの視点でデータを表示する</strong>ことです。
+            </p>
+
+            <h3>計算ロジック</h3>
+
+            <div class="formula">
+<strong>ログインユーザーの視点での「貸した合計」</strong>
+自分が貸した合計 =
+  自分が登録した lend の合計 +
+  相手が登録した borrow の合計
+            </div>
+
+            <div class="formula">
+<strong>ログインユーザーの視点での「借りた合計」</strong>
+自分が借りた合計 =
+  自分が登録した borrow の合計 +
+  相手が登録した lend の合計
+            </div>
+
+            <div class="formula">
+<strong>ログインユーザーの視点での「返済した合計」</strong>
+自分が返済した合計 =
+  自分が登録した repay の合計
+            </div>
+
+            <div class="formula">
+<strong>現在の収支</strong>
+収支 = 自分が貸した合計 - 自分が借りた合計 + 自分が返済した合計
+     = (自分のlend + 相手のborrow) - (自分のborrow + 相手のlend) + 自分のrepay
+            </div>
+
+            <h3>視点変換の例</h3>
+            <p style="color: #6b7280; margin: 16px 0;">データベースに以下のトランザクションがあるとします：</p>
+            <ul>
+                <li>User1が登録: type='lend', amount=5000</li>
+                <li>User2が登録: type='borrow', amount=3000</li>
+            </ul>
+
+            <div class="example-grid">
+                <div class="example-card">
+                    <h4>👤 User1でログインした場合</h4>
+                    <div class="example-item">
+                        <span class="example-label">貸した合計:</span>
+                        <span class="example-value positive">¥8,000</span>
+                    </div>
+                    <div class="example-item" style="font-size: 12px; color: #9ca3af;">
+                        <span>(自分のlend ¥5,000 + 相手のborrow ¥3,000)</span>
+                    </div>
+                    <div class="example-item">
+                        <span class="example-label">借りた合計:</span>
+                        <span class="example-value">¥0</span>
+                    </div>
+                    <div class="example-item">
+                        <span class="example-label">収支:</span>
+                        <span class="example-value positive">+¥8,000</span>
+                    </div>
+                </div>
+
+                <div class="example-card">
+                    <h4>👩 User2でログインした場合</h4>
+                    <div class="example-item">
+                        <span class="example-label">貸した合計:</span>
+                        <span class="example-value">¥0</span>
+                    </div>
+                    <div class="example-item">
+                        <span class="example-label">借りた合計:</span>
+                        <span class="example-value negative">¥8,000</span>
+                    </div>
+                    <div class="example-item" style="font-size: 12px; color: #9ca3af;">
+                        <span>(自分のborrow ¥3,000 + 相手のlend ¥5,000)</span>
+                    </div>
+                    <div class="example-item">
+                        <span class="example-label">収支:</span>
+                        <span class="example-value negative">-¥8,000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 返済フロー -->
+        <div class="section">
+            <h2><span class="icon">💰</span> 返済フロー</h2>
+
+            <div class="flow-diagram">
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-content">
+                        <div class="flow-title">借りの作成</div>
+                        <div class="flow-description">
+                            borrowタイプのトランザクションを作成（repaid: false）
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-number">2</div>
+                    <div class="flow-content">
+                        <div class="flow-title">返済モーダルで選択</div>
+                        <div class="flow-description">
+                            未返済の借り（repaid: false）のみを一覧表示し、返済する借りをチェックボックスで選択
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-number">3</div>
+                    <div class="flow-content">
+                        <div class="flow-title">返済レコードを作成</div>
+                        <div class="flow-description">
+                            repayタイプのトランザクションを作成し、repaid_transactionsに借りのIDを記録
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="flow-number">4</div>
+                    <div class="flow-content">
+                        <div class="flow-title">借りを返済済みにマーク</div>
+                        <div class="flow-description">
+                            該当するborrowレコードのrepaidをtrueに更新（二重返済を防止）
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <h4>🔒 二重返済の防止</h4>
+                <p>
+                    <code>repaid: true</code>になった借りは、返済モーダルに表示されなくなります。<br>
+                    これにより、同じ借りを二重に返済することを防ぎます。
+                </p>
+            </div>
+
+            <h3>返済の取り消し（削除）</h3>
+            <p style="color: #6b7280; margin: 16px 0;">返済レコードを削除すると、紐付けられた借りが自動的に未返済に戻ります。</p>
+            <div class="code-block">
+-- 1. 返済レコードを削除
+DELETE FROM transactions WHERE id = '返済のID';
+
+-- 2. 紐付けられた借りを未返済に戻す
+UPDATE transactions
+SET repaid = false
+WHERE id IN (
+  SELECT unnest(repaid_transactions)
+  FROM transactions
+  WHERE id = '返済のID'
+);
+            </div>
+        </div>
+
+        <!-- セキュリティ -->
+        <div class="section">
+            <h2><span class="icon">🔐</span> セキュリティ</h2>
+
+            <div class="security-grid">
+                <div class="security-item">
+                    <h4>✅ ホワイトリスト認証</h4>
+                    <p>allowed_emailsテーブルに登録されたメールアドレスのみがログイン可能</p>
+                </div>
+
+                <div class="security-item">
+                    <h4>✅ Row Level Security (RLS)</h4>
+                    <p>認証されたユーザーのみがデータにアクセス可能（二人しか使わないため全員が全データを閲覧可能）</p>
+                </div>
+
+                <div class="security-item">
+                    <h4>✅ Google OAuth 2.0</h4>
+                    <p>パスワード不要で安全な認証を実現</p>
+                </div>
+
+                <div class="security-item">
+                    <h4>✅ HTTPS通信</h4>
+                    <p>Supabaseとの通信は全て暗号化</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- インデックス -->
+        <div class="section">
+            <h2><span class="icon">⚡</span> インデックス（パフォーマンス最適化）</h2>
+            <p style="color: #6b7280; margin-bottom: 20px;">データベースの検索速度を向上させるため、以下のインデックスを作成します。</p>
+
+            <div class="code-block">
+-- 日付順の検索が頻繁なため
+CREATE INDEX idx_transactions_date
+ON transactions(date DESC);
+
+-- ユーザーごとの検索用
+CREATE INDEX idx_transactions_user_email
+ON transactions(user_email);
+
+-- 未返済の借りを探す用（返済モーダル）
+CREATE INDEX idx_transactions_repaid
+ON transactions(repaid)
+WHERE repaid = false;
+            </div>
+        </div>
+
+        <!-- まとめ -->
+        <div class="section">
+            <h2><span class="icon">✨</span> まとめ</h2>
+            <p style="color: #374151; line-height: 1.8; margin-bottom: 16px;">この設計により、以下が実現できています：</p>
+            <ul>
+                <li>✅ 二人が同じデータベースを共有しながら、それぞれの視点で閲覧可能</li>
+                <li>✅ 返済の追跡が可能（二重返済防止）</li>
+                <li>✅ 返済の取り消しが可能（元の状態に戻せる）</li>
+                <li>✅ セキュアなアクセス制御（ホワイトリスト + RLS）</li>
+                <li>✅ 拡張性を考慮した設計（将来的な機能追加に対応可能）</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

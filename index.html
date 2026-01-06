@@ -803,68 +803,81 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // ===== モックアップ設定 =====
-        const USERS = {
-            user1: { email: 'user1@example.com', name: 'あなた' },
-            user2: { email: 'user2@example.com', name: '彼女' }
-        };
+        // ===== Supabase設定 =====
+        const SUPABASE_URL = 'https://tfqmtfoqhnujussznkid.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcW10Zm9xaG51anVzc3pua2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2NjQ1MDMsImV4cCI6MjA4MzI0MDUwM30.SzfOchvXdnO-HIpuoweYoAZaezbE9Kv0Echs7w1Dchc';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
         let transactions = [];
 
         // ===== 認証関連 =====
-        function signInWithGoogle() {
-            // モックアップ: Googleログインをシミュレート（メールアドレスを入力）
-            const email = prompt('Googleログインをシミュレートします。メールアドレスを入力してください:\n\n許可されているアドレス:\n- user1@example.com\n- user2@example.com');
+        async function signInWithGoogle() {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+            });
 
-            if (!email) return; // キャンセルされた場合
-
-            // メールアドレスからユーザーを特定
-            const userEntry = Object.entries(USERS).find(([_, user]) => user.email === email);
-
-            if (!userEntry) {
-                alert('このメールアドレスは許可されていません。');
-                return;
+            if (error) {
+                console.error('ログインエラー:', error);
+                alert('ログインに失敗しました: ' + error.message);
             }
-
-            const [userId, userInfo] = userEntry;
-            currentUser = userInfo;
-
-            // ローカルストレージに保存
-            localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('currentUserId', userId);
-
-            showApp();
         }
 
-        function signOut() {
+        async function signOut() {
             if (confirm('ログアウトしますか?')) {
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('currentUserId');
-                location.reload();
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.error('ログアウトエラー:', error);
+                } else {
+                    location.reload();
+                }
             }
+        }
+
+        async function checkAllowedEmail(email) {
+            const { data, error } = await supabase
+                .from('allowed_emails')
+                .select('email')
+                .eq('email', email)
+                .single();
+
+            if (error || !data) {
+                await supabase.auth.signOut();
+                alert('このメールアドレスはアクセスが許可されていません。');
+                location.reload();
+                return false;
+            }
+
+            return true;
         }
 
         function showApp() {
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('appScreen').classList.remove('hidden');
-            document.getElementById('userInfo').textContent = `${currentUser.name} (${currentUser.email})`;
+            document.getElementById('userInfo').textContent = `${currentUser.email}`;
             loadTransactions();
         }
 
         // ===== データ関連 =====
-        function loadTransactions() {
-            const stored = localStorage.getItem('transactions');
-            transactions = stored ? JSON.parse(stored) : [];
+        async function loadTransactions() {
+            const { data, error } = await supabase
+                .from('transactions')
+                .select('*')
+                .order('date', { ascending: false });
+
+            if (error) {
+                console.error('トランザクション取得エラー:', error);
+                transactions = [];
+            } else {
+                transactions = data || [];
+            }
 
             updateBalance();
             updateDashboard();
             renderHistory();
-        }
-
-        function saveTransactions() {
-            localStorage.setItem('transactions', JSON.stringify(transactions));
         }
 
         function setDefaultDate() {
@@ -874,12 +887,32 @@
         }
 
         function updateBalance() {
-            const balance = transactions.reduce((sum, t) => {
-                if (t.type === 'lend') return sum + t.amount;
-                if (t.type === 'borrow') return sum - t.amount;
-                if (t.type === 'repay') return sum + t.amount; // 返済も収支をプラスに
-                return sum;
-            }, 0);
+            // ログインユーザーの視点で計算
+            const myEmail = currentUser.email;
+
+            // 自分が貸した = 自分が登録したlend + 相手が登録したborrow
+            const myLent = transactions
+                .filter(t =>
+                    (t.user_email === myEmail && t.type === 'lend') ||
+                    (t.user_email !== myEmail && t.type === 'borrow')
+                )
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            // 自分が借りた = 自分が登録したborrow + 相手が登録したlend
+            const myBorrowed = transactions
+                .filter(t =>
+                    (t.user_email === myEmail && t.type === 'borrow') ||
+                    (t.user_email !== myEmail && t.type === 'lend')
+                )
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            // 返済した金額
+            const myRepaid = transactions
+                .filter(t => t.user_email === myEmail && t.type === 'repay')
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            // 収支 = 貸した - 借りた + 返済した
+            const balance = myLent - myBorrowed + myRepaid;
 
             const balanceElement = document.getElementById('balanceAmount');
             const statusElement = document.getElementById('balanceStatus');
@@ -887,9 +920,9 @@
             balanceElement.textContent = `¥${balance.toLocaleString()}`;
 
             if (balance > 0) {
-                statusElement.textContent = '彼女が借りている';
+                statusElement.textContent = '相手が借りている';
             } else if (balance < 0) {
-                statusElement.textContent = 'あなたが借りている';
+                statusElement.textContent = '自分が借りている';
             } else {
                 statusElement.textContent = '貸し借りなし';
             }
@@ -1055,7 +1088,7 @@
             return div.innerHTML;
         }
 
-        function addTransaction(type) {
+        async function addTransaction(type) {
             const amount = parseInt(document.getElementById('amount').value);
             const description = document.getElementById('description').value.trim();
             const date = document.getElementById('date').value;
@@ -1076,42 +1109,59 @@
             }
 
             const transaction = {
-                id: Date.now().toString(),
                 user_email: currentUser.email,
                 type,
                 amount,
                 description,
                 date,
-                repaid: type === 'borrow' ? false : undefined // 借りた場合のみrepaidフラグを追加
+                repaid: type === 'borrow' ? false : null
             };
 
-            transactions.push(transaction);
-            saveTransactions();
+            const { error } = await supabase
+                .from('transactions')
+                .insert([transaction]);
+
+            if (error) {
+                console.error('トランザクション追加エラー:', error);
+                alert('記録の追加に失敗しました: ' + error.message);
+                return;
+            }
 
             document.getElementById('amount').value = '';
             document.getElementById('description').value = '';
             setDefaultDate();
 
-            loadTransactions();
+            await loadTransactions();
         }
 
-        function deleteTransaction(id) {
+        async function deleteTransaction(id) {
             if (confirm('この記録を削除しますか?')) {
                 const transaction = transactions.find(t => t.id === id);
 
                 // 返済を削除する場合、紐付けられた借りを未返済に戻す
-                if (transaction && transaction.type === 'repay' && transaction.repaidTransactions) {
-                    transaction.repaidTransactions.forEach(repaidId => {
-                        const borrowTransaction = transactions.find(t => t.id === repaidId);
-                        if (borrowTransaction) {
-                            borrowTransaction.repaid = false;
-                        }
-                    });
+                if (transaction && transaction.type === 'repay' && transaction.repaid_transactions) {
+                    const { error: updateError } = await supabase
+                        .from('transactions')
+                        .update({ repaid: false })
+                        .in('id', transaction.repaid_transactions);
+
+                    if (updateError) {
+                        console.error('借り更新エラー:', updateError);
+                    }
                 }
 
-                transactions = transactions.filter(t => t.id !== id);
-                saveTransactions();
-                loadTransactions();
+                const { error } = await supabase
+                    .from('transactions')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) {
+                    console.error('トランザクション削除エラー:', error);
+                    alert('削除に失敗しました: ' + error.message);
+                    return;
+                }
+
+                await loadTransactions();
             }
         }
 
@@ -1179,7 +1229,7 @@
             document.getElementById('repayConfirmBtn').disabled = total === 0;
         }
 
-        function confirmRepay() {
+        async function confirmRepay() {
             if (selectedRepayItems.size === 0) return;
 
             const repayedIds = Array.from(selectedRepayItems);
@@ -1189,38 +1239,74 @@
             }, 0);
 
             // 選択された借りを「返済済み」にマーク
-            transactions.forEach(t => {
-                if (selectedRepayItems.has(t.id)) {
-                    t.repaid = true;
-                }
-            });
+            const { error: updateError } = await supabase
+                .from('transactions')
+                .update({ repaid: true })
+                .in('id', repayedIds);
+
+            if (updateError) {
+                console.error('借り更新エラー:', updateError);
+                alert('返済処理に失敗しました: ' + updateError.message);
+                return;
+            }
 
             // 返済記録を追加（type: 'repay'）
             const repayTransaction = {
-                id: Date.now().toString(),
                 user_email: currentUser.email,
                 type: 'repay',
                 amount: total,
                 description: '返済',
                 date: new Date().toISOString().split('T')[0],
-                repaidTransactions: repayedIds // どの借りを返したか記録
+                repaid_transactions: repayedIds // どの借りを返したか記録
             };
 
-            transactions.push(repayTransaction);
-            saveTransactions();
-            loadTransactions();
+            const { error: insertError } = await supabase
+                .from('transactions')
+                .insert([repayTransaction]);
 
+            if (insertError) {
+                console.error('返済記録追加エラー:', insertError);
+                alert('返済記録の追加に失敗しました: ' + insertError.message);
+                return;
+            }
+
+            await loadTransactions();
             closeRepayModal();
         }
 
         // ===== 初期化 =====
-        function initialize() {
-            const isLoggedIn = localStorage.getItem('isLoggedIn');
-            const userId = localStorage.getItem('currentUserId');
+        async function initialize() {
+            // 認証状態の変更を監視
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    const user = session.user;
 
-            if (isLoggedIn && userId && USERS[userId]) {
-                // ログイン済みの場合はユーザー情報を復元
-                currentUser = USERS[userId];
+                    // ホワイトリストチェック
+                    const isAllowed = await checkAllowedEmail(user.email);
+                    if (!isAllowed) return;
+
+                    currentUser = { email: user.email };
+                    setDefaultDate();
+                    showApp();
+                } else if (event === 'SIGNED_OUT') {
+                    document.getElementById('loginScreen').classList.remove('hidden');
+                    document.getElementById('appScreen').classList.add('hidden');
+                    currentUser = null;
+                    transactions = [];
+                }
+            });
+
+            // 初回読み込み時のセッション確認
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (session) {
+                const user = session.user;
+
+                // ホワイトリストチェック
+                const isAllowed = await checkAllowedEmail(user.email);
+                if (!isAllowed) return;
+
+                currentUser = { email: user.email };
                 setDefaultDate();
                 showApp();
             } else {
