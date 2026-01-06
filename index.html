@@ -803,20 +803,21 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
     <script>
         // ===== Supabase設定 =====
         const SUPABASE_URL = 'https://tfqmtfoqhnujussznkid.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRmcW10Zm9xaG51anVzc3pua2lkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2NjQ1MDMsImV4cCI6MjA4MzI0MDUwM30.SzfOchvXdnO-HIpuoweYoAZaezbE9Kv0Echs7w1Dchc';
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         let currentUser = null;
         let transactions = [];
 
         // ===== 認証関連 =====
         async function signInWithGoogle() {
-            const { error } = await supabase.auth.signInWithOAuth({
+            const { error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
             });
 
@@ -828,7 +829,7 @@
 
         async function signOut() {
             if (confirm('ログアウトしますか?')) {
-                const { error } = await supabase.auth.signOut();
+                const { error } = await supabaseClient.auth.signOut();
                 if (error) {
                     console.error('ログアウトエラー:', error);
                 } else {
@@ -838,14 +839,14 @@
         }
 
         async function checkAllowedEmail(email) {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('allowed_emails')
                 .select('email')
                 .eq('email', email)
                 .single();
 
             if (error || !data) {
-                await supabase.auth.signOut();
+                await supabaseClient.auth.signOut();
                 alert('このメールアドレスはアクセスが許可されていません。');
                 location.reload();
                 return false;
@@ -863,7 +864,7 @@
 
         // ===== データ関連 =====
         async function loadTransactions() {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('transactions')
                 .select('*')
                 .order('date', { ascending: false });
@@ -1117,7 +1118,7 @@
                 repaid: type === 'borrow' ? false : null
             };
 
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('transactions')
                 .insert([transaction]);
 
@@ -1140,7 +1141,7 @@
 
                 // 返済を削除する場合、紐付けられた借りを未返済に戻す
                 if (transaction && transaction.type === 'repay' && transaction.repaid_transactions) {
-                    const { error: updateError } = await supabase
+                    const { error: updateError } = await supabaseClient
                         .from('transactions')
                         .update({ repaid: false })
                         .in('id', transaction.repaid_transactions);
@@ -1150,7 +1151,7 @@
                     }
                 }
 
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('transactions')
                     .delete()
                     .eq('id', id);
@@ -1239,7 +1240,7 @@
             }, 0);
 
             // 選択された借りを「返済済み」にマーク
-            const { error: updateError } = await supabase
+            const { error: updateError } = await supabaseClient
                 .from('transactions')
                 .update({ repaid: true })
                 .in('id', repayedIds);
@@ -1260,7 +1261,7 @@
                 repaid_transactions: repayedIds // どの借りを返したか記録
             };
 
-            const { error: insertError } = await supabase
+            const { error: insertError } = await supabaseClient
                 .from('transactions')
                 .insert([repayTransaction]);
 
@@ -1277,7 +1278,7 @@
         // ===== 初期化 =====
         async function initialize() {
             // 認証状態の変更を監視
-            supabase.auth.onAuthStateChange(async (event, session) => {
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
                 if (event === 'SIGNED_IN' && session) {
                     const user = session.user;
 
@@ -1297,7 +1298,7 @@
             });
 
             // 初回読み込み時のセッション確認
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
 
             if (session) {
                 const user = session.user;
