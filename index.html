@@ -910,13 +910,18 @@
                 )
                 .reduce((sum, t) => sum + t.amount, 0);
 
-            // 返済した金額
+            // 自分が返済した金額（自分の借りを減らす）
             const myRepaid = transactions
                 .filter(t => t.user_email === myEmail && t.type === 'repay')
                 .reduce((sum, t) => sum + t.amount, 0);
 
-            // 収支 = 貸した - 借りた + 返済した
-            const balance = myLent - myBorrowed + myRepaid;
+            // 相手が返済した金額（相手の借りを減らす = 自分の貸しを減らす）
+            const theirRepaid = transactions
+                .filter(t => t.user_email !== myEmail && t.type === 'repay')
+                .reduce((sum, t) => sum + t.amount, 0);
+
+            // 収支 = 貸した - 借りた + 自分が返済した - 相手が返済した
+            const balance = myLent - myBorrowed + myRepaid - theirRepaid;
 
             const balanceElement = document.getElementById('balanceAmount');
             const statusElement = document.getElementById('balanceStatus');
@@ -990,17 +995,23 @@
                 let displayLent, displayBorrowed, displayRepaid, netBalance;
 
                 if (user.email === myEmail) {
-                    // 自分の統計はそのまま
+                    // 自分の統計
                     displayLent = user.lent;
                     displayBorrowed = user.borrowed;
                     displayRepaid = user.repaid;
-                    netBalance = user.lent + user.repaid - user.borrowed;
+                    // 相手の返済を取得
+                    const theirRepaid = Object.values(userStatsMap)
+                        .filter(u => u.email !== myEmail)
+                        .reduce((sum, u) => sum + u.repaid, 0);
+                    netBalance = user.lent - user.borrowed + user.repaid - theirRepaid;
                 } else {
                     // 相手の統計は逆転
                     displayLent = user.borrowed;  // 相手が借りた = 自分が貸した
                     displayBorrowed = user.lent;  // 相手が貸した = 自分が借りた
-                    displayRepaid = 0;  // 相手の返済は自分からは見えない（複雑になるので）
-                    netBalance = user.borrowed + user.repaid - user.lent;  // 逆計算
+                    displayRepaid = 0;  // 相手の返済は表示しない（複雑になるので）
+                    // 自分の返済を取得
+                    const myRepaid = userStatsMap[myEmail] ? userStatsMap[myEmail].repaid : 0;
+                    netBalance = user.borrowed - user.lent - myRepaid + user.repaid;
                 }
 
                 const userName = user.email.split('@')[0];
